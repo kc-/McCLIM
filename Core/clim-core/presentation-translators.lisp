@@ -93,6 +93,9 @@
   (when pointer-documentation
     (setf (slot-value obj 'pointer-documentation) pointer-documentation)))
 
+(defclass selection-translator (presentation-translator)
+  ())
+
 ;;; This lives in a command table
 
 (defvar *current-translator-cache-generation* 0
@@ -341,6 +344,24 @@ and used to ensure that presentation-translators-caches are up to date.")
              (frame-drag-and-drop ',name ',command-table
                                   presentation context-type
                                   frame event window x y)))))))
+
+(defmacro define-selection-translator (name (from-type to-type command-table
+                                       &key (tester 'default-translator-tester))
+                                       arglist
+                                       &body body)
+  (let* ((forbidden-args '(context-type frame event window x y))
+         (intersection (intersection arglist forbidden-args :test #'string=)))
+    (assert (null intersection) (arglist)
+            "Selection translator arglist can't have args ~a but has ~a."
+            forbidden-args intersection))
+  `(define-presentation-translator ,name
+       (,from-type ,to-type ,command-table
+                   :gesture :select
+                   :tester ,tester
+                   :tester-definitive t
+                   :translator-class selection-translator)
+       ,arglist
+     ,@body))
 
 
 ;;; 23.7.2 Presentation Translator Functions
